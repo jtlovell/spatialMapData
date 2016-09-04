@@ -1,9 +1,11 @@
 Package: spatialMapData
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Provides processed shapefiles to make spatial maps
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
+Author: JT Lovell
+Maintainer: JT Lovell <johntlovell@gmail.com>
+Description: Contains 15 processed shapefiles that have been transformed to uprojected spatialdataframes
+License: WP-2
 LazyData: TRUE
+Depends: sp, raster, maptools, rgeos
+RoxygenNote: 5.0.1
