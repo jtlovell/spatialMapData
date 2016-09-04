@@ -1,0 +1,233 @@
+# spatialMapData
+---
+title: "spatialMapData_Vignette"
+author: "JT Lovell"
+date: "September 4, 2016"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Part 1: Set up the environment
+* Install the package
+  + If devtools is not installed, first install this package
+
+```{r fake devtools install, eval = F}
+install.packages("devtools")
+```
+
+* Using devtools, install the development version of this data packages from github
+
+```{r fake github install, eval = F}
+library(devtools)
+install_github("jtlovell/spatialMapData")
+```
+
+* Load the package
+
+```{r load package}
+library(spatialMapData)
+```
+
+### Part 2: Overview:
+#### The simplest purpose of this package is to provide data for lines and polygons that can simply be plotted in R
+```{r plot world map}
+data(ne_10m_coastline.shp)
+plot(ne_10m_coastline.shp, col = "grey")
+```
+
+#### The data can also be cropped to a discrete region, for example the area around Vancouver, BC
+```{r plot vancouver}
+extent <- c((-123.1207-1), (-123.1207+1), (49.2827-1), (49.2827+1))
+
+plot(crop(ne_10m_land.shp,extent), col = "lightgreen")
+title("area surrounding Vancouver")
+data(ne_10m_urban_areas.shp)
+plot(crop(ne_10m_urban_areas.shp,extent), add=T, col = "darkgrey")
+plot(crop(ne_10m_coastline.shp,extent), add=T)
+points(-123.1207, 49.2827, pch = 19, col = "black", cex = 2)
+points(-123.1207, 49.2827, pch = 4, col = "white", cex = .75)
+text(-123.1207, 49.2827, label = "Vancouver City Center", adj = c(0,-1))
+```
+
+#### The user may wish to make more complicated maps with points that come from one's own data. Below is a workflow to do this. 
+
+### Part 3, Prepare the user defined data:
+* Load some data that will be your spatial points
+  + Could also read in a csv or whatever
+  + Important that 1st two columns are latitude and longitude labeled as "lat" and "lon"
+
+```{r make data}
+ll<-data.frame(lat = c(35.99115, 42.41962, 31.04338, 
+                       32.30290, 27.54986, 38.89690, 39.14070,
+                       30.28415, 30.38398, 41.15430, 44.30680),
+               lon = c(-97.04649, -85.37127, -97.34950, 
+                       -94.97940, -97.88101, -92.21780,
+                       -96.63890, -97.78162, -97.72938, 
+                       -96.41530, -96.67050),
+               label = c("Stillwater", "Hickory Corners", "Temple",
+                         "Overton", "Kingsville", "Columbia",
+                         "Manhattan", "AustinBFL", "AustinPKLE",
+                         "Lincoln", "Brookings"),
+               stringsAsFactors=F)
+```
+
+* Make map boundaries
+  + Here, I use the spatial points and a buffer of 5 deg lat and 2 deg lon. 
+
+```{r}
+extent <- with(ll, c(min(lon-5), max(lon+5), min(lat-2), max(lat+2)))
+sites <- SpatialPointsDataFrame(coords = ll[,c("lon","lat")], data=ll, 
+                               proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+sites.c <- crop(sites, extent)
+```
+
+* make a projection
+  + Here i use the extent data to inform the projection
+
+```{r make projection}
+proj.parse<-paste0("+proj=poly +lat_0=",
+                   mean(extent[3:4]),
+                   " +lon_0=",
+                   mean(extent[1:2]),
+                   " +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+proj <- CRS(proj.parse)
+```
+
+
+### Part 3 (Optional): Read in raster data from bioclim (or elsewhere)
+* Not evaluated here to speed up compiling
+* This layer can be cropped, projected and added to the plot like any other layer
+
+```{r fake get data, eval = F}
+tmin<-getData('worldclim', var='bio', res=2.5)[["bio11"]]
+tmin.c <- crop(tmin, extent)
+```
+
+### Part 4: Load the polygon / line / point files from the database
+#### The package contains 15 processed shapefiles that have been transformed to uprojected spatialdataframes:
+1. US Counties
+```{r load counties}
+data(cb_2014_us_county_500k.shp)
+```
+
+2. Rivers
+```{r load maj rivers}
+data(MajorRivers_dd83.shp)
+```
+
+3. Country boundaries
+```{r load countries}
+data(ne_10m_admin_0_boundary_lines_land.shp)
+```
+
+4. State/province boundaries
+```{r load states}
+data(ne_10m_admin_1_states_provinces.shp)
+```
+
+5. Coasts
+```{r load coasts}
+data(ne_10m_coastline.shp)
+```
+
+6. Lake borders
+```{r load lakes}
+data(ne_10m_lakes.shp)
+```
+
+7. Land borders
+```{r load land}
+data(ne_10m_land.shp)
+```
+
+8. Protected land borders
+```{r load protected lands}
+data(ne_10m_parks_and_protected_lands_area.shp)
+```
+
+9. Protected rivers/coasts
+
+```{r}
+data(ne_10m_parks_and_protected_lands_line.shp)
+```
+
+10. Protected lands centerpoints
+
+```{r}
+data(ne_10m_parks_and_protected_lands_point.shp)
+```
+
+11. Protected lands rank data
+
+```{r}
+data(ne_10m_parks_and_protected_lands_scale_rank.shp)
+```
+
+12. Densely populated area boundaries
+```{r load populated areas}
+data(ne_10m_populated_places.shp)
+```
+
+13. River centerlines
+```{r load rivers}
+data(ne_10m_rivers_lake_centerlines.shp)
+```
+
+14. Roads
+```{r load roads}
+data(ne_10m_roads.shp)
+```
+
+15. Urban area boundaries
+```{r load urban areas}
+data(ne_10m_urban_areas.shp)
+```
+
+
+### Part 5 Crop the .shp's to the area of the ll data and USA
+
+```{r crop shapefiles}
+states <- crop(ne_10m_admin_1_states_provinces.shp, extent)
+lakes <- crop(ne_10m_lakes.shp, extent)
+land <- crop(ne_10m_land.shp, extent)
+urbanAreas <- crop(ne_10m_urban_areas.shp, extent)
+
+us.states<-states[grep("USA",states[[1]]),]
+```
+
+### Part 6: Make unprojected map
+#### Some notes:
+* The initial plot (1st line) is the first layer
+* All following layers need to specify add = T so that the layer is added to the existing plot
+```{r plot unprojected}
+plot(land, col = "lightgrey", bty="n", border = F)
+plot(us.states, border="darkgrey", col = "ghostwhite", add=T)
+plot(urbanAreas, col = "orange", add=T, border=F)
+plot(lakes, col = "skyblue",border="darkgrey", add=T)
+plot(sites.c, col = "black",pch=19, cex = 2, add=T)
+plot(sites.c, col = "white", add=T)
+```
+
+### Part 7: Project the data
+```{r project data}
+us.states <- spTransform(us.states, proj)
+land <- spTransform(land, proj)
+urbanAreas <- spTransform(urbanAreas, proj)
+sites.c <- spTransform(sites.c, proj)
+lakes <- spTransform(lakes, proj)
+```
+
+### Part 8: Make a projected plot
+```{r plot projected}
+plot(land, col = "lightgrey", bty="n", border = F)
+plot(us.states, border="darkgrey", col = "ghostwhite", add=T)
+plot(urbanAreas, col = "orange", add=T, border=F)
+plot(lakes, col = "skyblue",border="darkgrey", add=T)
+plot(sites.c, col = "black",pch=19, cex = 2, add=T)
+plot(sites.c, col = "white", add=T)
+```
+
